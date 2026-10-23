@@ -1,6 +1,7 @@
 import pg from "pg";
 import crypto from "node:crypto";
 import {runBatch,live,initialize} from "./fast-sync.js";
+import {scheduledPoll} from "./scheduled-poll.js";
 import {setupContacts,refreshContacts,fetchGroupAvatar} from "./people.js";
 const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:2,connectionTimeoutMillis:8000,statement_timeout:12000});
 const reply=(res,code,body)=>res.status(code).setHeader("Cache-Control","private,no-store").json(body);
@@ -28,6 +29,7 @@ await pool.query("INSERT INTO cg_summaries(instance,jid,summary,source_fingerpri
 return{summary,cached:false};
 }
 export default async function handler(req,res){res.setHeader("X-Robots-Tag","noindex");const u=new URL(req.url,"https://localhost"),path=u.pathname.split("/").pop();if(path==="login"&&req.method==="POST"){if(!equal(req.body?.password,process.env.ADMIN_PASSWORD)||!process.env.ADMIN_PASSWORD)return reply(res,401,{error:"Senha incorreta"});const exp=String(Date.now()+604800000);res.setHeader("Set-Cookie","cg_session="+exp+"."+signature(exp)+"; HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=604800");return reply(res,200,{ok:true})}
+if(path==="scheduled-poll"&&req.method==="POST"){const k=process.env.CENTRAL_POLL_TOKEN;if(!k||!equal(req.headers["x-central-poll-token"],k))return reply(res,401,{error:"Unauthorized"});try{return reply(res,200,await scheduledPoll(pool,evolution,makeSummary))}catch(e){console.error("scheduled-poll",e.code||e.name);return reply(res,500,{error:"Scheduler could not finish"})}}
 if(path==="logout"&&req.method==="POST"){res.setHeader("Set-Cookie","cg_session=; HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=0");return reply(res,200,{ok:true})}
 if(!authorized(req))return reply(res,401,{error:"Senha do painel incorreta"});try{
 if(path==="health"){await pool.query("SELECT 1");return reply(res,200,{database:true,evolutionConfigured:!!(process.env.EVOLUTION_API_URL&&process.env.EVOLUTION_API_KEY),aiConfigured:!!process.env.OPENAI_API_KEY})}
