@@ -1,5 +1,7 @@
 import pg from "pg";
 import crypto from "node:crypto";
+import {runBatch,live,initialize} from "./fast-sync.js";
+import {setupContacts,refreshContacts,fetchGroupAvatar} from "./people.js";
 const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:2,connectionTimeoutMillis:8000,statement_timeout:12000});
 const reply=(res,code,body)=>res.status(code).setHeader("Cache-Control","private,no-store").json(body);
 const values=x=>Array.isArray(x)?x:Array.isArray(x?.data)?x.data:Array.isArray(x?.records)?x.records:Array.isArray(x?.chats)?x.chats:Array.isArray(x?.messages?.records)?x.messages.records:Array.isArray(x?.messages)?x.messages:[];
@@ -29,48 +31,15 @@ export default async function handler(req,res){res.setHeader("X-Robots-Tag","noi
 if(path==="logout"&&req.method==="POST"){res.setHeader("Set-Cookie","cg_session=; HttpOnly; Secure; SameSite=Strict; Path=/api; Max-Age=0");return reply(res,200,{ok:true})}
 if(!authorized(req))return reply(res,401,{error:"Senha do painel incorreta"});try{
 if(path==="health"){await pool.query("SELECT 1");return reply(res,200,{database:true,evolutionConfigured:!!(process.env.EVOLUTION_API_URL&&process.env.EVOLUTION_API_KEY),aiConfigured:!!process.env.OPENAI_API_KEY})}
-if(path==="groups"){const q=await pool.query("SELECT g.instance,g.jid,g.name,(SELECT count(*)::int FROM cg_messages m WHERE m.instance=g.instance AND m.jid=g.jid) AS message_count FROM cg_groups g ORDER BY g.name LIMIT 5000");return reply(res,200,{groups:q.rows})}
-if(path==="messages"){const instance=u.searchParams.get("instance"),jid=u.searchParams.get("jid");if(!instance||!jid)return reply(res,400,{error:"Identifique o grupo"});const q=await pool.query("SELECT sender,body,ts FROM cg_messages WHERE instance=$1 AND jid=$2 ORDER BY ts DESC NULLS LAST LIMIT 250",[instance,jid]);return reply(res,200,{messages:q.rows.reverse()})}
+if(path==="groups"){const q=await pool.query("SELECT g.instance,g.jid,g.name,g.avatar_url,(SELECT count(*)::int FROM cg_messages m WHERE m.instance=g.instance AND m.jid=g.jid) AS message_count FROM cg_groups g ORDER BY g.name LIMIT 5000");return reply(res,200,{groups:q.rows})}
+if(path==="messages"){await setupContacts(pool);const instance=u.searchParams.get("instance"),jid=u.searchParams.get("jid");if(!instance||!jid)return reply(res,400,{error:"Grupo não identificado"});
+const q=await pool.query("SELECT m.id,m.sender,m.body,m.ts,m.from_me,m.kind,COALESCE(NULLIF(p.display_name,''),CASE WHEN m.sender LIKE '%@lid' THEN 'Participante ' || right(split_part(m.sender,'@',1),4) WHEN m.sender LIKE '%@s.whatsapp.net' THEN '+' || split_part(m.sender,'@',1) ELSE NULLIF(m.sender,'') END,'Participante') AS display_name,p.avatar_url FROM cg_messages m LEFT JOIN cg_people p ON p.instance=m.instance AND p.jid=m.sender WHERE m.instance=$1 AND m.jid=$2 ORDER BY m.ts DESC NULLS LAST LIMIT 250",[instance,jid]);return reply(res,200,{messages:q.rows.reverse()})}
 if(path==="sync"&&req.method==="POST"){const instances=values(await evolution("/instance/fetchInstances"));const n=instances.find(x=>(x.name||x.instanceName||x.instance?.instanceName)==="lucas_bezerra_rolim")||instances[0];if(!n)return reply(res,200,{instances:0,saved:0,report:[],warning:"Nenhuma instância encontrada"});const name=n.name||n.instanceName||n.instance?.instanceName;if(!name)return reply(res,200,{instances:instances.length,saved:0,report:[],warning:"Nome da instância ausente"});const report=await scanInstance(name);return reply(res,200,{instances:instances.length,saved:report.groups,report:[report],partial:instances.length>1})}
 if(path==="import"&&req.method==="POST"){const {instance,jid:group}=req.body||{};if(typeof instance!=="string"||typeof group!=="string"||!group.endsWith("@g.us"))return reply(res,400,{error:"Grupo inválido"});const q=await pool.query("SELECT 1 FROM cg_groups WHERE instance=$1 AND jid=$2",[instance,group]);if(!q.rowCount)return reply(res,404,{error:"Grupo não cadastrado"});const r=await evolution("/chat/findMessages/"+encodeURIComponent(instance),{method:"POST",body:{where:{key:{remoteJid:group}},limit:100},timeout:20000});const msgs=values(r);let saved=0;for(const m of msgs){const id=m.key?.id||m.id;if(!id||(m.key?.remoteJid&&m.key.remoteJid!==group))continue;const t=Number(m.messageTimestamp||m.timestamp||0),ts=t?new Date(t>1e12?t:t*1000):null;if(ts&&!Number.isFinite(ts.getTime()))continue;const body=m.message?.conversation||m.message?.extendedTextMessage?.text||m.message?.imageMessage?.caption||m.message?.videoMessage?.caption||m.text||"";const sender=m.key?.participant||m.participant||m.pushName||"";const p=await pool.query("INSERT INTO cg_messages(instance,jid,id,sender,body,ts) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING",[instance,group,id,sender,body,ts]);saved+=p.rowCount||0}return reply(res,200,{received:msgs.length,saved})}
-if(path==="batch"&&req.method==="POST"){
-await pool.query("CREATE TABLE IF NOT EXISTS cg_sync_state(instance text,jid text,last_sync timestamptz,success boolean DEFAULT false,error text,PRIMARY KEY(instance,jid))");
-await pool.query("ALTER TABLE cg_sync_state ADD COLUMN IF NOT EXISTS next_page integer NOT NULL DEFAULT 1");
-await pool.query("ALTER TABLE cg_sync_state ADD COLUMN IF NOT EXISTS backfill_complete boolean NOT NULL DEFAULT false");
-await pool.query("ALTER TABLE cg_sync_state ADD COLUMN IF NOT EXISTS first_hash text");
-await pool.query("ALTER TABLE cg_messages ADD COLUMN IF NOT EXISTS from_me boolean NOT NULL DEFAULT false");
-await pool.query("ALTER TABLE cg_messages ADD COLUMN IF NOT EXISTS kind text");
-await pool.query("ALTER TABLE cg_messages ADD COLUMN IF NOT EXISTS ingested_at timestamptz DEFAULT now()");
-await pool.query("ALTER TABLE cg_summaries ADD COLUMN IF NOT EXISTS source_fingerprint text");
-await pool.query("INSERT INTO cg_sync_state(instance,jid) SELECT instance,jid FROM cg_groups ON CONFLICT DO NOTHING");
-const item=await pool.query("SELECT instance,jid,next_page,first_hash FROM cg_sync_state WHERE backfill_complete=false AND (last_sync IS NULL OR last_sync<now()-interval '20 seconds') ORDER BY last_sync NULLS FIRST LIMIT 1");
-if(!item.rowCount){const stats=await pool.query("SELECT (SELECT count(*)::int FROM cg_messages) messages,(SELECT count(*)::int FROM cg_sync_state WHERE backfill_complete) checked,(SELECT count(*)::int FROM cg_groups) groups");return reply(res,200,{done:true,stats:stats.rows[0]})}
-const g=item.rows[0];let page=g.next_page,imported=0,received=0,reason="",complete=false,error=null,firstHash=g.first_hash;
-try{for(let i=0;i<3;i++){
-const answer=await evolution("/chat/findMessages/"+encodeURIComponent(g.instance),{method:"POST",body:{where:{key:{remoteJid:g.jid}},page,offset:80},timeout:16000});
-const messages=values(answer);
-if(!messages.length){complete=true;reason="Fim das mensagens disponíveis";break}
-const hash=crypto.createHash("sha256").update(messages.map(m=>m.key?.id||m.id||"").join("|")).digest("hex");
-if(firstHash===hash&&page>1){complete=true;reason="A Evolution repetiu a página anterior, histórico adicional indisponível";break}
-if(page===1)firstHash=hash;
-let newest=0,oldest=Number.MAX_SAFE_INTEGER;
-for(const m of messages){const id=m.key?.id||m.id,remote=m.key?.remoteJid||g.jid;if(!id||remote!==g.jid)continue;
-const n=Number(m.messageTimestamp||m.timestamp||0),ts=n?new Date(n>1e12?n:n*1000):null;if(!ts||Number.isNaN(ts.valueOf()))continue;
-oldest=Math.min(oldest,ts.valueOf());newest=Math.max(newest,ts.valueOf());
-if(ts.valueOf()<Date.parse("2026-10-12T00:00:00-03:00"))continue;
-const body=m.message?.conversation||m.message?.extendedTextMessage?.text||m.message?.imageMessage?.caption||m.message?.videoMessage?.caption||m.text||"";
-const result=await pool.query("INSERT INTO cg_messages(instance,jid,id,sender,body,ts,from_me,kind) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(instance,jid,id) DO NOTHING",[g.instance,g.jid,id,m.key?.participant||m.participant||m.pushName||"",body,ts,!!m.key?.fromMe,Object.keys(m.message||{})[0]||"unknown"]);
-imported+=result.rowCount||0;
-}
-received+=messages.length;
-const meta=answer?.messages||answer?.data?.messages||answer||{},pages=Number(meta.totalPages||answer?.totalPages||0);
-if((newest&&newest<Date.parse("2026-10-12T00:00:00-03:00"))||(pages&&page>=pages)){complete=true;reason="Fim do período ou das páginas da Evolution";break}
-page++;
-}}catch(e){error=String(e.message||e).slice(0,130)}
-await pool.query("UPDATE cg_sync_state SET next_page=$3,backfill_complete=$4,last_sync=now(),success=$5,error=$6,first_hash=COALESCE(first_hash,$7) WHERE instance=$1 AND jid=$2",[g.instance,g.jid,page,complete,!error,error,firstHash]);
-const stats=await pool.query("SELECT (SELECT count(*)::int FROM cg_messages) messages,(SELECT count(*)::int FROM cg_sync_state WHERE backfill_complete) checked,(SELECT count(*)::int FROM cg_groups) groups");
-return reply(res,200,{result:[{group:g.jid,imported,received,page,complete,reason,error}],stats:stats.rows[0]});
-}
+if(path==="batch"&&req.method==="POST")return reply(res,200,await runBatch(pool,evolution));
+if(path==="live"&&req.method==="POST"){const {instance,jid:group}=req.body||{};if(typeof instance!=="string"||typeof group!=="string"||!group.endsWith("@g.us"))return reply(res,400,{error:"Grupo inválido"});const q=await pool.query("SELECT 1 FROM cg_groups WHERE instance=$1 AND jid=$2",[instance,group]);if(!q.rowCount)return reply(res,404,{error:"Grupo desconhecido"});return reply(res,200,await live(pool,evolution,instance,group))}
+if(path==="contact-sync"&&req.method==="POST"){await setupContacts(pool);const instance="lucas_bezerra_rolim";return reply(res,200,await refreshContacts(pool,evolution,instance))}
+if(path==="avatar"&&req.method==="POST"){await setupContacts(pool);const {instance,jid:group}=req.body||{};const match=await pool.query("SELECT avatar_url FROM cg_groups WHERE instance=$1 AND jid=$2",[instance,group]);if(!match.rowCount)return reply(res,404,{error:"Grupo não cadastrado"});if(match.rows[0].avatar_url)return reply(res,200,{avatar_url:match.rows[0].avatar_url,cached:true});return reply(res,200,await fetchGroupAvatar(pool,evolution,instance,group))}
 if(path==="stats"){const q=await pool.query("SELECT (SELECT count(*)::int FROM cg_groups) groups,(SELECT count(*)::int FROM cg_messages) messages,(SELECT count(*)::int FROM cg_sync_state WHERE backfill_complete) complete,(SELECT count(*)::int FROM cg_summaries) summaries");return reply(res,200,q.rows[0])}
 if(path==="summary"&&req.method==="GET"){const params=new URL(req.url,"https://localhost").searchParams,instance=params.get("instance"),group=params.get("jid");if(!instance||!group)return reply(res,400,{error:"Grupo não identificado"});const r=await pool.query("SELECT summary,created_at FROM cg_summaries WHERE instance=$1 AND jid=$2 ORDER BY created_at DESC LIMIT 1",[instance,group]);return reply(res,200,r.rows[0]||{summary:null})}
 if(path==="summaries"){const r=await pool.query("SELECT DISTINCT ON(instance,jid) instance,jid,summary,created_at FROM cg_summaries ORDER BY instance,jid,created_at DESC");return reply(res,200,{summaries:r.rows})}
