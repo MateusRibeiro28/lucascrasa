@@ -1,1 +1,13 @@
-{"name":"central-grupos-ai","version":"2.0.0","type":"module","private":true,"dependencies":{"pg":"8.13.3"}}
+{
+  "name": "central-grupos-ai",
+  "version": "2.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "pg": "8.13.3",
+    "socket.io-client": "4.8.1"
+  },
+  "scripts": {
+    "start:worker": "node worker/index.js"
+  }
+}
