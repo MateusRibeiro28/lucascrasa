@@ -6,12 +6,22 @@
 #groupList{overflow-y:auto;flex:1;min-height:0}.group{width:100%;display:flex;align-items:center;gap:11px;padding:11px;border:0;background:transparent;color:#e9f1f0;text-align:left;border-bottom:1px solid #24343a}.group:hover,.group.selected{background:#26353e}.ginfo{min-width:0;flex:1}.gline{display:flex;justify-content:space-between;gap:6px}.gname{font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.gdesc{color:#a1b4bb;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}.gtime{font-size:11px;color:#96b5ae;white-space:nowrap}
 .statusbar{background:#142b29;border-bottom:1px solid #275148;padding:12px;font-size:11px;color:#badbd1}.statusbar strong{display:block;color:#69e4b7;margin-bottom:4px}.progress{height:6px;background:#395053;border-radius:8px;overflow:hidden;margin:7px 0}.progress span{display:block;background:#35cba4;height:100%;width:0%;transition:width .3s}.statusbar .btn{padding:6px 8px;font-size:11px;margin-right:5px;margin-top:6px}
 #chatMessages{flex:1;overflow-y:auto;padding:25px 7%;background:repeating-linear-gradient(45deg,#ffffff02 0 3px,transparent 3px 44px),#0b141a}.msg{width:max-content;max-width:78%;padding:9px 12px;border-radius:12px 12px 12px 3px;background:#202c33;margin:9px 0;box-shadow:0 2px 6px #0004;overflow-wrap:anywhere}.msg.me{margin-left:auto;background:#005c4b;border-radius:12px 12px 3px 12px}.msg .who{color:#87dfbc;font-size:11px;font-weight:700}.msg .body{white-space:pre-wrap;margin-top:3px}.media-btn{display:block;margin-top:8px;padding:9px 12px;border-radius:8px;color:#c6f4e4;background:#28604f;border:1px solid #568f7c}.media-content img,.media-content video{max-width:min(100%,340px);max-height:350px;border-radius:9px;display:block;margin-top:6px}.media-content audio{max-width:100%;margin-top:8px}.media-caption{font-size:12px;color:#b8ccc5;margin-top:5px}.msg .time{text-align:right;color:#a5c0bc;font-size:10px;margin-top:4px}.chatfoot{background:#202c33;padding:11px 16px;display:flex;align-items:center;gap:12px;font-size:12px;color:#c0d0d2}.chatfoot .btn{margin-left:auto}.empty{padding:32px 16px;text-align:center;color:#9fb4b9}.back{display:none}
-.summarybody{padding:20px;overflow-y:auto;flex:1}.summarybody h2{font-size:20px;letter-spacing:-.3px;margin:13px 0 7px}.summarybody .desc{font-size:12px;color:#9daeb8;margin-bottom:15px}.badge{display:inline-block;color:#99eccf;background:#155045;padding:6px 10px;border-radius:18px;font-size:11px;font-weight:700}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0 22px}.stat{background:#1e323c;padding:12px;border:1px solid #3b545c;border-radius:11px}.stat strong{display:block;font-size:23px}.stat small{font-size:11px;color:#a8bfbe}#summaryText{white-space:pre-wrap;line-height:1.7;background:#1e3235;border:1px solid #3e5e59;border-radius:13px;padding:17px;font-size:13px;min-height:130px;color:#dce9e6}.summarybody .btn{width:100%;margin-bottom:14px}.backdrop{display:none}
+.summarybody{padding:20px;overflow-y:auto;flex:1}.summarybody h2{font-size:20px;letter-spacing:-.3px;margin:13px 0 7px}.summarybody .desc{font-size:12px;color:#9daeb8;margin-bottom:15px}.badge{display:inline-block;color:#99eccf;background:#155045;padding:6px 10px;border-radius:18px;font-size:11px;font-weight:700}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0 22px}.stat{background:#1e323c;padding:12px;border:1px solid #3b545c;border-radius:11px}.stat strong{display:block;font-size:23px}.stat small{font-size:11px;color:#a8bfbe}#summaryText{white-space:normal;line-height:1.7;background:#1e3235;border:1px solid #3e5e59;border-radius:13px;padding:17px;font-size:13px;min-height:130px;color:#dce9e6;overflow-wrap:anywhere}
+#summaryText h3{font-size:15px;font-weight:800;color:#83e7c8;margin:18px 0 8px;line-height:1.35}
+#summaryText h3:first-child{margin-top:0}
+#summaryText strong{font-weight:800;color:#fff}
+#summaryText em{color:#d1e3df}
+#summaryText p{margin:7px 0 11px}
+#summaryText ol,#summaryText ul{margin:5px 0 14px;padding-left:23px}
+#summaryText li{margin:6px 0;padding-left:2px}
+#summaryText li::marker{color:#6ad8b7;font-weight:700}
+.msg{min-width:min(165px,78%)}.msg .who{overflow-wrap:normal;word-break:normal}
+.summarybody .btn{width:100%;margin-bottom:14px}.backdrop{display:none}
 @media(max-width:1190px){#app{grid-template-columns:310px minmax(300px,1fr)}.summary{position:fixed;z-index:9;right:0;top:0;bottom:0;width:min(370px,100vw);transform:translateX(105%);transition:transform .2s;box-shadow:-10px 0 40px #0009}.summary.open{transform:translateX(0)}.backdrop.show{display:block;position:fixed;inset:0;background:#0009;z-index:8}.summary-close{display:block!important}}
 @media(min-width:1191px){.summary-close{display:none!important}}
 @media(max-width:710px){#app{display:block;position:relative}.sidebar,.chat{position:absolute;inset:0;width:100%;height:100%;transition:transform .2s}.sidebar{z-index:2}.chat{z-index:4;transform:translateX(100%)}#app.chat-active .chat{transform:translateX(0)}.back{display:block}.bar{padding:10px 12px}.msg{max-width:90%}#chatMessages{padding:17px 12px}.summary{width:100%}.chatfoot .btn{font-size:12px}}
 </style></head><body>
-<div id="login"><form class="login-card" id="loginForm"><div class="login-logo">✦</div><h1>Central de Grupos</h1><p>Entenda tudo o que acontece nos seus grupos, sem precisar ler mensagem por mensagem.</p><label for="password">SENHA DE ACESSO</label><input id="password" type="password" required placeholder="Digite sua senha" autocomplete="current-password"><button class="btn" id="loginBtn">Entrar na Central →</button><div id="loginError"></div><small class="muted">Sua sessão fica salva neste dispositivo por até 30 dias.</small></form></div>
+<div id="login"><form class="login-card" id="loginForm"><div class="login-logo">✦</div><h1>Central de Grupos</h1><p>Entenda tudo o que acontece nos seus grupos, sem precisar ler mensagem por mensagem.</p><label for="password">SENHA DE ACESSO</label><input id="password" type="password" required placeholder="Digite sua senha" autocomplete="current-password"><button class="btn" id="loginBtn">Entrar na Central →</button><div id="loginError"></div><small class="muted">Sua sessão permanece neste dispositivo por até 7 dias.</small></form></div>
 <div id="app" class="hide">
 <aside class="sidebar"><div class="bar"><div class="logo">✦</div><div><h2>Central de Grupos</h2><small id="healthText">Evolution · Neon · IA</small></div><div class="push"><button class="iconbtn" title="Atualizar grupos" id="updateGroups">↻</button><button class="iconbtn" title="Sair" id="logout">⎋</button></div></div>
 <div class="statusbar"><strong id="progressTitle">Iniciando coleta...</strong><div id="progressText">Mensagens desde 12/10/2026</div><div class="progress"><span id="progressBar"></span></div><button class="btn alt" id="importBtn">Importar histórico</button><button class="btn alt" id="allSummaryBtn">Resumir todos</button></div>
@@ -33,8 +43,32 @@ async function loadMessages(){const g=state.selected;if(!g)return;try{const data
 function humanText(input,names){return String(input).replace(/@(\d{10,18})(?=\b)/g,(_,number)=>'@'+(names[number]||('Participante '+number.slice(-4))))}
 function mediaKind(kind){return ['imageMessage','stickerMessage','videoMessage','audioMessage','pttMessage','documentMessage'].includes(kind)}
 async function loadMedia(g,m,btn,holder){btn.disabled=true;btn.textContent='Carregando mídia...';try{const r=await post('media',{instance:g.instance,jid:g.jid,id:m.id});const source=r.data;const p=document.createElement('div');p.className='media-content';let media;if(m.kind==='videoMessage'){media=document.createElement('video');media.controls=true;media.preload='metadata'}else if(['audioMessage','pttMessage'].includes(m.kind)){media=document.createElement('audio');media.controls=true;media.preload='none'}else if(m.kind==='documentMessage'){const link=document.createElement('a');link.textContent='Abrir documento';link.href=source;link.target='_blank';link.rel='noopener noreferrer';link.download='documento';p.append(link)}else{media=document.createElement('img');media.alt=m.kind==='stickerMessage'?'Figurinha':'Imagem da conversa';media.loading='lazy'}if(media){media.src=source;p.append(media)}btn.replaceWith(p)}catch(e){btn.textContent='Mídia indisponível · tentar novamente';btn.disabled=false;btn.title=e.message}}
-async function loadSummary(){const g=state.selected;if(!g)return;const found=state.summaries[g.instance+'|'+g.jid];E('summaryText').textContent=found?.summary||'Preparando resumo do grupo com as mensagens disponíveis...';E('summaryDate').textContent=found?'Atualizado em '+fmt(found.created_at):'Importando histórico e aguardando resumo.'}
-async function generateSelected(){const g=state.selected;if(!g){openSummary();E('summaryText').textContent='Escolha um grupo à esquerda.';return}openSummary();E('generateSelected').disabled=true;E('summaryText').textContent='Gerando resumo com IA...';try{const r=await post('summary',{instance:g.instance,jid:g.jid});E('summaryText').textContent=r.summary;await refreshAll()}catch(e){E('summaryText').textContent='Falha no resumo: '+e.message}finally{E('generateSelected').disabled=false}}
+function summaryHtml(source){
+  const escape = value => String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const inline = value => escape(value)
+    .replace(/\*\*([^*\n]+)\*\*/g,"<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,"$1<em>$2</em>")
+    .replace(/\*\*/g,"");
+  const lines=String(source||"").replace(/\r/g,"").split("\n");
+  const out=[];let list=null;
+  const close=()=>{if(list){out.push("</"+list+">");list=null}};
+  for(let raw of lines){
+    let line=raw.trim();
+    if(!line){close();continue}
+    let h=line.match(/^#{1,4}\s+(.+)$/);
+    if(!h)h=line.match(/^\*\*((?:Resumo (?:rápido|executivo)|Decisões|Pendências(?: e responsáveis)?|Alertas|Urgências)\s*:?)\*\*$/i);
+    if(h){close();out.push("<h3>"+inline(h[1].replace(/\*+/g,""))+"</h3>");continue}
+    let match=line.match(/^\d+[.)]\s+(.+)$/),kind=match?"ol":null;
+    if(!match){match=line.match(/^[-•]\s+(.+)$/);if(match)kind="ul"}
+    if(match){if(list!==kind){close();list=kind;out.push("<"+kind+">")}out.push("<li>"+inline(match[1])+"</li>");continue}
+    close();
+    out.push("<p>"+inline(line)+"</p>");
+  }
+  close();
+  return out.join("");
+}
+async function loadSummary(){const g=state.selected;if(!g)return;const found=state.summaries[g.instance+'|'+g.jid];if(found?.summary){E('summaryText').innerHTML=summaryHtml(found.summary)}else{E('summaryText').textContent='Preparando resumo do grupo com as mensagens disponíveis...'}E('summaryDate').textContent=found?'Atualizado em '+fmt(found.created_at):'Importando histórico e aguardando resumo.'}
+async function generateSelected(){const g=state.selected;if(!g){openSummary();E('summaryText').textContent='Escolha um grupo à esquerda.';return}openSummary();E('generateSelected').disabled=true;E('summaryText').textContent='Gerando resumo com IA...';try{const r=await post('summary',{instance:g.instance,jid:g.jid});E('summaryText').innerHTML=summaryHtml(r.summary);await refreshAll()}catch(e){E('summaryText').textContent='Falha no resumo: '+e.message}finally{E('generateSelected').disabled=false}}
 function openSummary(){E('summaryPanel').classList.add('open');E('backdrop').classList.add('show')}function closeSummary(){E('summaryPanel').classList.remove('open');E('backdrop').classList.remove('show')}
 E('summaryClose').onclick=closeSummary;E('backdrop').onclick=closeSummary;E('openSummary').onclick=openSummary;E('summarizeInline').onclick=generateSelected;E('generateSelected').onclick=generateSelected;
 E('back').onclick=()=>E('app').classList.remove('chat-active');E('search').oninput=renderGroups;
