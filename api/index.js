@@ -1,7 +1,7 @@
 import pg from "pg";
 import crypto from "node:crypto";
 import {runBatch,live,initialize} from "./fast-sync.js";
-import {scheduledPoll} from "./scheduled-poll.js";
+import {scheduledPoll} from "../lib/scheduled-poll.js";
 import {setupContacts,refreshContacts,fetchGroupAvatar} from "./people.js";
 const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:2,connectionTimeoutMillis:8000,statement_timeout:12000});
 const reply=(res,code,body)=>res.status(code).setHeader("Cache-Control","private,no-store").json(body);
