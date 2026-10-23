@@ -97,8 +97,8 @@ async function main(){
  try{
  if(Date.now()-lastLoad>5*60*1000)await reload();
  // Keep polling as a recovery path even when socket events work.
- const group=groupList[cursor++%Math.max(1,groupList.length)];
- if(group){try{await poll(group);pollErrors=0}catch(e){pollErrors++;if(pollErrors%12===1)console.warn('poll error',e.message)}}
+ const batch=groupList.length?Array.from({length:Math.min(groupList.length,3)},()=>groupList[cursor++%groupList.length]):[];
+ await Promise.all(batch.map(async group=>{try{await poll(group);pollErrors=0}catch(e){pollErrors++;if(pollErrors%12===1)console.warn('poll error',e.message)}}));
  // Debounce group summaries: 15s after activity, at most one generation per group/minute.
  const now=Date.now();
  for(const [jid,changed] of dirty){if(now-changed<15000||now-(lastSummarized.get(jid)||0)<60000)continue;dirty.delete(jid);lastSummarized.set(jid,now);try{await summarizeOne(jid)}catch(e){console.warn('summary error',e.message)}break}
